@@ -219,33 +219,20 @@ const createTransaction = async () => {
       );
     }
   );
-  // message.success(`Transaction hash: ${transaction.value.sendZkapp.zkapp.hash}`)
-  console.log(transaction.value)
-  console.log(zkApp.value)
-  console.log(transaction.value.toGraphqlQuery());
   message.success('You have got the correct answer to the equation and ...', { duration: 5000 })
   message.success('You have successfully created a trasaction. But we have not sent it yet! Before doing that, we have to generate a proof.', { duration: 5000 })
 }
 
 const createProofAndSend = async () => {
-  // fill in the proof - this can take a while...
+
   console.log('Creating an execution proof... this will take a while.');
   const n = notification.create({
     title: 'Why do we need a proof?',
     content: `A generated proof is a long string containing a cryptographic proof, that you did run this zkApp method in your browser.\n\nYou will send a transaction that will modify an on-chain value only if you know the correct answer to the equation and have the proof you ran this exact zkApp method.`,
   })
 
-  console.log('before proof')
-  console.log(transaction.value)
-  console.log(transaction.value.toGraphqlQuery())
-  console.log(transaction.value.toJSON())
-
   await transaction.value.prove();
-
-  console.log('after proof')
   console.log(transaction.value.transaction.accountUpdates[0].authorization.proof)
-  // console.log(transaction.value.toGraphqlQuery())
-  // console.log(transaction.value.toJSON())
 
   // send the transaction to the graphql endpoint
   console.log('Sending the transaction...');
