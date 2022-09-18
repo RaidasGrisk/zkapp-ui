@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useLoadingBar, useMessage, useNotification } from 'naive-ui'
 
-import { SimpleZkapp_ } from "/home/raidas/Desktop/zkapp-snarkyjs";
+import { SimpleZkapp_ } from "/home/raidas/Desktop/zkapp-snarkyjs-new";
 
 import {
   Field,
@@ -15,23 +15,47 @@ import {
   setGraphqlEndpoint,
 } from 'snarkyjs';
 
+// ui - components
 const loadingBar = useLoadingBar()
 const message = useMessage()
 const notification = useNotification()
 const loadingSnarkyJs = ref(true)
 
-// B62qqBAUo5smz1whfdRjniFUnPv1V4Z1Y2VFPv16Zp1Z4497wmXmBgR
-// EKEGgnxvJZCAdoWWVpP2xdXpEMnYcbiWs7Z3sma3xSfnyY2tzt4C
+// zk-app
+const zkappState = ref('')
+const zkApp = ref({})
+const transaction = ref({})
+const equationAnswer = ref()
+
+// keys
 const publicKey_ = ref('')
 const privateKey_ = ref('')
+
+// redeployed contract address:
+// B62qoD7GZfMURQSpEF98HBTCuuchzgiw43dNsZXanMg8w6AYKLCuVfc
+// EKFQuwPXne8GdobsevcvJS5LoPmvVv2xdHthgDa2N1EU5yEaJkUn
+
+// other funded test accounts
+// B62qqBAUo5smz1whfdRjniFUnPv1V4Z1Y2VFPv16Zp1Z4497wmXmBgR
+// EKEGgnxvJZCAdoWWVpP2xdXpEMnYcbiWs7Z3sma3xSfnyY2tzt4C
+
+// B62qrr2RZSaDtPDcifbbczkugvCBptRRACeFhL4M1sYbZWt66NU1hy3
+// EKE6we4DHzjpq6q2bK5rNyq9DQ5ZHP4bA23T8bPZCBvzxGxYc7Fo
+//
+// B62qoQKcwPWbYPbuM5wRN9kGQXxgXGuHadL694tbw9ZoYctExz7cepW
+// EKEjSbJVEx4qPjHJzEd1HSGLQeGCA51SLU473ECvWppnhuhEh3c7
+//
+// B62qp41xP6LQvwoyk3wjVEXoUBvkRm5wTDoZbeAooWNYzA5U5Wt2t2e
+// EKF8gg8dkhH6Dj7XAs3FCBX6BFBaffjAWqFRPCjpE29GdBuggDrQ
+//
+// B62qqkRPb1njwuwQ9VMJV39enASmkB3BvQDfpakhKryY4sGAMtzoqY5
+// EKFHoANnDUaMCMc9gLqte5cgjE4WEgWsUFLMSH2yYQYL7FG8gdb5
 
 const generateKeys = () => {
   const privateKey__ = PrivateKey.random();
   privateKey_.value = privateKey__.toBase58();
   publicKey_.value = privateKey__.toPublicKey().toBase58();
 }
-
-const zkApp = ref({})
 
 // this is the steps vals
 const stepsStatus = ref({
@@ -42,7 +66,7 @@ const stepsStatus = ref({
 // const current = ref(1)
 
 // some other vars
-const zkAppAddress = 'B62qiwkqjLEtd1hwhBWHEbbdKdoSHNkGDZNZNrjg5ZCYr5mEM9VDVtj'
+const zkAppAddress = 'B62qoD7GZfMURQSpEF98HBTCuuchzgiw43dNsZXanMg8w6AYKLCuVfc'
 const steps = ref({
   1: {
     'isFinished': false,
@@ -148,14 +172,14 @@ const compileZkApp = async (zkAppAddress) => {
   const n = notification.create({
     title: 'Why compile?',
     content: `Usually smart contracts sit on chain and we can trigger a method by sending a transaction. Then a node will run the method of the smart contract.
-    \n\nBut thats not what we're going to do. Instead, we fetch the smart contract and compile it locally so that we can run it in our local environment (the browser). The network nodes will not run it for us.`,
+    \nBut thats not what we're going to do. Instead, we fetch the smart contract and compile it locally so that we can run it in our local environment (the browser). The network nodes will not run it for us.`,
   })
 
   // compile the zkapp
   console.log('before compiling')
   await sleep(1500)
   console.log('Compiling smart contract...', zkAppAddress);
-  await SimpleZkapp_.compile(PublicKey.fromBase58(zkAppAddress));
+  await SimpleZkapp_.compile();
   console.log(SimpleZkapp_)
   console.log('done')
 
@@ -167,7 +191,10 @@ const compileZkApp = async (zkAppAddress) => {
 }
 
 const getZkAppState = async (zkappAddress) => {
-  await fetchAccount({ publicKey: zkappAddress });
+  console.log('PUBLICKEY: ', zkAppAddress, PublicKey.fromBase58(zkAppAddress))
+  let { account, error } = await fetchAccount({ publicKey: PublicKey.fromBase58(zkAppAddress)});
+  console.log('account', JSON.stringify(account, null, 2));
+  console.log('error', JSON.stringify(error, null, 2));
 
   // create the zkapp object
   zkApp.value = new SimpleZkapp_(PublicKey.fromBase58(zkAppAddress));
@@ -176,39 +203,60 @@ const getZkAppState = async (zkappAddress) => {
 
   console.log(zkApp.value)
   let value = zkApp.value.value.get();
+  zkappState.value = value
   console.log(`Found deployed zkapp, with state ${value.toBase58()}`);
 }
 
 const createTransaction = async () => {
-  let feePayerKey = PrivateKey.fromBase58(
-    "EKEcetoxQUqfjToHsWftd7h4Xzqea56tSisK2nMyCq1uV5unboS8"
-  );
-  let transaction = await Mina.transaction(
-    { feePayerKey, fee: "100_000_000" },
+  console.log('creating transaction')
+  let feePayerKey = PrivateKey.fromBase58(privateKey_.value);
+  transaction.value = await Mina.transaction(
+    { feePayerKey, fee: "300_000_000" },
     () => {
       zkApp.value.giveAnswer(
-        Field(7),
-        PublicKey.fromBase58(
-          'B62qir1gS3RFMWqtassVaw8DZm5fM9Gp5dLP5mFGapT8xj6qjVRmaJ3'
-        )
+        Field(equationAnswer.value),
+        PublicKey.fromBase58(publicKey_.value)
       );
     }
   );
+  // message.success(`Transaction hash: ${transaction.value.sendZkapp.zkapp.hash}`)
+  console.log(transaction.value)
+  console.log(zkApp.value)
+  console.log(transaction.value.toGraphqlQuery());
+  message.success('You have got the correct answer to the equation and ...', { duration: 5000 })
+  message.success('You have successfully created a trasaction. But we have not sent it yet! Before doing that, we have to generate a proof.', { duration: 5000 })
 }
 
 const createProofAndSend = async () => {
   // fill in the proof - this can take a while...
-  console.log('Creating an execution proof...');
-  await transaction.prove();
+  console.log('Creating an execution proof... this will take a while.');
+  const n = notification.create({
+    title: 'Why do we need a proof?',
+    content: `A generated proof is a long string containing a cryptographic proof, that you did run this zkApp method in your browser.\n\nYou will send a transaction that will modify an on-chain value only if you know the correct answer to the equation and have the proof you ran this exact zkApp method.`,
+  })
 
-  // if you want to inspect the transaction, you can print it out:
-  // console.log(transaction.toGraphqlQuery());
+  console.log('before proof')
+  console.log(transaction.value)
+  console.log(transaction.value.toGraphqlQuery())
+  console.log(transaction.value.toJSON())
+
+  await transaction.value.prove();
+
+  console.log('after proof')
+  console.log(transaction.value.transaction.accountUpdates[0].authorization.proof)
+  // console.log(transaction.value.toGraphqlQuery())
+  // console.log(transaction.value.toJSON())
 
   // send the transaction to the graphql endpoint
   console.log('Sending the transaction...');
-  await transaction.send().wait();
+  let sendZkapp = await transaction.value.send();
+  let txHash = await sendZkapp.hash()
+  console.log(txHash)
+  message.success(`Transaction hash: ${txHash}`)
+  message.success('Transaction send')
 
   await shutdown();
+
 }
 
 
@@ -273,7 +321,14 @@ const createProofAndSend = async () => {
         that correctly solved the puzzle and sent over the generated proof.
         <n-button @click="getZkAppState(zkappAddress)" :loading="steps[4].isLoading">getZkAppState</n-button>
         <n-tag :size="'large'" style="padding: 30px;" :bordered="false">
-          <n-text depth="3">kjahsdkjashdkjahsdkjashdkjsahdkjashd</n-text>
+          <div v-if="steps[4].isLoading">
+            <n-spin size="large" />
+          </div>
+          <div else>
+            <n-text depth="3">
+              {{ zkappState ? zkappState : '-' }}
+            </n-text>
+          </div>
         </n-tag>
         You will update this state if you solve the equation below.
       </n-space>
@@ -285,7 +340,7 @@ const createProofAndSend = async () => {
             Input your answer and run the smart contract method <b>locally in the browser</b>.
             Check the method source code here.
           </div>
-          <n-input placeholder="10 / 2 + 2 = ?"></n-input>
+          <n-input placeholder="10 / 2 + 2 = ?" v-model:value="equationAnswer"></n-input>
           <n-button @click="createTransaction()" :loading="steps[5].isLoading" >call the method</n-button>
         </n-space>
       </n-step>
@@ -298,6 +353,9 @@ const createProofAndSend = async () => {
   <br>
   <br>
   {{ steps }}
+  <br><br>
+  <!-- {{ transaction ? transaction : false }} -->
+  <!-- {{ transaction ? transaction.toGraphqlQuery() : false }} -->
   <n-space vertical>
 
 
