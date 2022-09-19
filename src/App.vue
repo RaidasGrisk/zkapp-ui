@@ -4,7 +4,7 @@
 import { darkTheme } from 'naive-ui'
 import header_ from './components/header.vue'
 import intro_ from './components/intro.vue'
-import HelloWorld from './components/HelloWorld.vue'
+import content from './components/content.vue'
 
 
 </script>
@@ -20,7 +20,7 @@ import HelloWorld from './components/HelloWorld.vue'
             </n-layout-header>
             <n-layout-content style="padding: 2rem;">
               <intro_ />
-              <HelloWorld />
+              <content />
             </n-layout-content>
             <n-layout-footer bordered style="padding: 2rem;">
               Footer Footer Footer
