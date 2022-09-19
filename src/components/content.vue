@@ -414,7 +414,6 @@ const broadcastTransaction = async () => {
           <!-- <n-tag type="warning" size="small" round :bordered="false">local</n-tag> -->
           <div>
             Input your answer and run the smart contract method <b>locally in the browser</b>.
-            Check the method source code here.
           </div>
           <n-input placeholder="10 / 2 + 2 = ?" v-model:value="equationAnswer"></n-input>
           <n-button @click="createTransaction()" :loading="steps[4].isLoading" >Call</n-button>
