@@ -8,7 +8,7 @@ export default defineConfig({
     vue(),
     crossOriginIsolation(),
   ],
-  // build: { target: "es2020" },
+  build: { target: "es2020" },
   optimizeDeps: {
     esbuildOptions: { target: "es2020", supported: { bigint: true } },
   },
