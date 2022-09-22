@@ -78,9 +78,7 @@ const stepsStatus = ref({
 
 // some other vars
 // redeployed contract address:
-// B62qoD7GZfMURQSpEF98HBTCuuchzgiw43dNsZXanMg8w6AYKLCuVfc
-// EKFQuwPXne8GdobsevcvJS5LoPmvVv2xdHthgDa2N1EU5yEaJkUn
-const zkAppAddress = 'B62qoD7GZfMURQSpEF98HBTCuuchzgiw43dNsZXanMg8w6AYKLCuVfc'
+const zkAppAddress = 'B62qiY3PVYcjdDfQehgSJDgKUsGbg5WwkEeD26Jb9ZxExRQ4xjW1AMg'
 const steps = ref({
   1: {
     'isFinished': false,
@@ -247,7 +245,7 @@ const createTransaction = async () => {
       }
     );
     message.success('You have got the correct answer to the equation and ...', { duration: 10000 })
-    message.success('You have successfully generated a trasaction. But we have not sent it yet! Before doing that, we have to generate a proof.', { duration: 10000 })
+    message.success('You have successfully generated a transaction. But we have not sent it yet! Before doing that, we have to generate a proof.', { duration: 10000 })
 
   } catch (error) {
     message.error('Error', { duration: 10000 })
@@ -313,8 +311,7 @@ const broadcastTransaction = async () => {
     let sendZkapp = await transaction.value.send();
     let txHash = await sendZkapp.hash()
     console.log(txHash)
-    message.success(`Transaction hash: ${txHash}`, { duration: 10000 })
-    message.success('Transaction send', { duration: 10000 })
+    message.success('Transaction send 🚀🚀🚀. The state of the smart contract will be updated after transaction is included into the next block!', { duration: 10000 })
     notification.create({
       title: 'Check when your transaction will be included into the next block',
       content: 'Transaction hash: ' + txHash + '\n\n' + 'https://berkeley.minaexplorer.com/'
@@ -430,6 +427,7 @@ const broadcastTransaction = async () => {
       </n-step>
     </n-steps>
   </n-space>
+  <br><br>
 </div>
 </template>
 
