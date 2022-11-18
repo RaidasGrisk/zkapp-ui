@@ -34,24 +34,24 @@ const privateKey_ = ref('')
 // prefunded accounts [ public / private ]
 const prefundedAccounts = [
   [
-    'B62qqBAUo5smz1whfdRjniFUnPv1V4Z1Y2VFPv16Zp1Z4497wmXmBgR',
-    'EKEGgnxvJZCAdoWWVpP2xdXpEMnYcbiWs7Z3sma3xSfnyY2tzt4C'
+    'B62qqpTaif2ZwadsnW3AJrjEZFAhhQqJteQsKXsFHtuoiRaEXLT3Zao',
+    'EKFUbYcwhfYmrFsW6v5uGNtMDSeimRzDdbAwREU7cMcUJT9KrpsB'
   ],
   [
-    'B62qrr2RZSaDtPDcifbbczkugvCBptRRACeFhL4M1sYbZWt66NU1hy3',
-    'EKE6we4DHzjpq6q2bK5rNyq9DQ5ZHP4bA23T8bPZCBvzxGxYc7Fo'
+    'B62qixeyQT1UrTdBBtWYWCWE8jMwT7WqVQR3XdwW57PPZ3LN8Npdp6p',
+    'EKFPvfktzLLdw3UkkV79p925nbbs4Wa93gTWS5TKVegaow7SVR4d'
   ],
   [
-    'B62qoQKcwPWbYPbuM5wRN9kGQXxgXGuHadL694tbw9ZoYctExz7cepW',
-    'EKEjSbJVEx4qPjHJzEd1HSGLQeGCA51SLU473ECvWppnhuhEh3c7'
+    'B62qjXikcXeh6N7sDfm4BHfrFjRoiFm91q1q3r5hUYiBYWxQ7LeoyeR',
+    'EKFcPijNKKrhpUUSxFZQBnhm8Xp5BemwQ7ZVtCVAEA5zFQfGQ4cG'
   ],
   [
-    'B62qp41xP6LQvwoyk3wjVEXoUBvkRm5wTDoZbeAooWNYzA5U5Wt2t2e',
-    'EKF8gg8dkhH6Dj7XAs3FCBX6BFBaffjAWqFRPCjpE29GdBuggDrQ'
+    'B62qnJmqEPPhy8Ag29voaznFFGZBMXmPXceAnttx2quFNNwctVbieCx',
+    'EKFbPEig433rtQmJwcWmkGLFGNqLk4Tb1nSr4ghhezzcLqFrq4PP'
   ],
   [
-    'B62qqkRPb1njwuwQ9VMJV39enASmkB3BvQDfpakhKryY4sGAMtzoqY5',
-    'EKFHoANnDUaMCMc9gLqte5cgjE4WEgWsUFLMSH2yYQYL7FG8gdb5'
+    'B62qrEpj44vuozt1TKMeKEf9GUJAwt2vRXVaWVNUhZYABXzacSbcDi3',
+    'EKENWDrcCufaDBLQxzV7fGn1MYcfzhtexMmZwWsdLPhUMBEeXStN'
   ],
 ]
 
@@ -78,7 +78,7 @@ const stepsStatus = ref({
 
 // some other vars
 // redeployed contract address:
-const zkAppAddress = 'B62qiY3PVYcjdDfQehgSJDgKUsGbg5WwkEeD26Jb9ZxExRQ4xjW1AMg'
+const zkAppAddress = 'B62qnTUHoe9fTB5YMk3J1bcKXcWQEdseJzkhp9pWM994PTryBPAZZ23'
 const steps = ref({
   1: {
     'isFinished': false,
@@ -233,11 +233,11 @@ const createTransaction = async () => {
   loadingBar.start()
   steps.value[4].isLoading = true
 
-  console.log('creating transaction')
-  try {  let feePayerKey = PrivateKey.fromBase58(privateKey_.value);
+  try {
+    let feePayerKey = PrivateKey.fromBase58(privateKey_.value);
     transaction.value = await Mina.transaction(
       { feePayerKey, fee: "300_000_000" },
-      () => {
+      (zkApp, equationAnswer, publicKey_) => {
         zkApp.value.giveAnswer(
           Field(equationAnswer.value),
           PublicKey.fromBase58(publicKey_.value)
@@ -249,7 +249,7 @@ const createTransaction = async () => {
 
   } catch (error) {
     message.error('Error', { duration: 10000 })
-
+    console.log(error)
     steps.value[4].isLoading = false
     steps.value[4].isFinished = true
     stepsStatus.value.current = 4
@@ -279,8 +279,9 @@ const createProof = async () => {
 
   try {
     await transaction.value.prove();
-    console.log(transaction.value.transaction.accountUpdates[0].authorization.proof)
+    console.log('The proof object? No longer see where is it stored :/', transaction.value.transaction)
   } catch (error) {
+    console.log(error)
     steps.value[5].isLoading = false
     steps.value[5].isFinished = true
     stepsStatus.value.current = 5
@@ -290,7 +291,7 @@ const createProof = async () => {
 
   notification.create({
     title: 'Bingo, you successfully generated the proof!',
-    content: 'Here is how it looks like: \n\n' + transaction.value.transaction.accountUpdates[0].authorization.proof.slice(0, 350) + ' ...'
+    // content: 'Here is how it looks like: \n\n' + transaction.value.transaction.accountUpdates[0].authorization.proof.slice(0, 350) + ' ...'
   })
 
   steps.value[5].isLoading = false
@@ -309,6 +310,7 @@ const broadcastTransaction = async () => {
   console.log('Sending the transaction...');
   try {
     let sendZkapp = await transaction.value.send();
+    console.log(sendZkapp)
     let txHash = await sendZkapp.hash()
     console.log(txHash)
     message.success('Transaction send 🚀🚀🚀. The state of the smart contract will be updated after transaction is included into the next block!', { duration: 10000 })
