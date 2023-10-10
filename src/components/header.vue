@@ -16,7 +16,7 @@ import { ref } from 'vue'
     <template #avatar>
       <n-avatar :size="48">
         <n-text style="font-size: 20px;">
-          👷‍♂️
+          📝
         </n-text>
       </n-avatar>
     </template>

@@ -8,8 +8,8 @@ export default defineConfig({
     vue(),
     crossOriginIsolation(),
   ],
-  build: { target: "es2020" },
+  build: { target: "esnext" },
   optimizeDeps: {
-    esbuildOptions: { target: "es2020", supported: { bigint: true } },
+    esbuildOptions: { target: "esnext", supported: { bigint: true } },
   },
 })

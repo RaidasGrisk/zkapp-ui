@@ -2,18 +2,16 @@
 import { ref, onMounted } from 'vue'
 import { useLoadingBar, useMessage, useNotification, NIcon } from 'naive-ui'
 
-import { SimpleZkapp_ } from "zkapp-snarkyjs";
+import { SimpleZkapp } from './zkApp/zkapp.js';
 
 import {
   Field,
   PrivateKey,
   PublicKey,
   Mina,
-  isReady,
-  shutdown,
   fetchAccount,
   setGraphqlEndpoint,
-} from 'snarkyjs';
+} from 'o1js';
 
 // ui - components
 const loadingBar = useLoadingBar()
@@ -34,24 +32,24 @@ const privateKey_ = ref('')
 // prefunded accounts [ public / private ]
 const prefundedAccounts = [
   [
-    'B62qqpTaif2ZwadsnW3AJrjEZFAhhQqJteQsKXsFHtuoiRaEXLT3Zao',
-    'EKFUbYcwhfYmrFsW6v5uGNtMDSeimRzDdbAwREU7cMcUJT9KrpsB'
+    'B62qonTvKWLXDEzr4sLuyE9NgkzNN8XivSUYKryckyYdSrEJREwVmX7',
+    'EKFA4EGPvvK1TpPrjMJPpWKR1U24UQLuqxPpiXM7fJbTfLiyXutZ'
   ],
   [
-    'B62qixeyQT1UrTdBBtWYWCWE8jMwT7WqVQR3XdwW57PPZ3LN8Npdp6p',
-    'EKFPvfktzLLdw3UkkV79p925nbbs4Wa93gTWS5TKVegaow7SVR4d'
+    'B62qp1jy6CmFevfJJnqP4yiEDiSmEXYYQ5FckHUeMCtnEupWZAvU9qG',
+    'EKFA8GDQUcd8MzggFWMLrKTUxgFKTkFZmyUatQukP1mn3LJxD6Aw'
   ],
   [
-    'B62qjXikcXeh6N7sDfm4BHfrFjRoiFm91q1q3r5hUYiBYWxQ7LeoyeR',
-    'EKFcPijNKKrhpUUSxFZQBnhm8Xp5BemwQ7ZVtCVAEA5zFQfGQ4cG'
+    'B62qixjXfKP3N9KXEhnSQ9hHEmBwjEjjgnryFmSHJBK2KBodvGdQh2A',
+    'EKEHncSQMWugRfpbLYyHVDUdRc86XEkC1EbKfWH6YrXpcRftxecx'
   ],
   [
-    'B62qnJmqEPPhy8Ag29voaznFFGZBMXmPXceAnttx2quFNNwctVbieCx',
-    'EKFbPEig433rtQmJwcWmkGLFGNqLk4Tb1nSr4ghhezzcLqFrq4PP'
+    'B62qmqGq3EmzYXfSifJRRkbRfx6RHuiDw3fCgCXygg3xKASAi431RP2',
+    'EKF2PVhdFTUtdJTQ1XWUw4ccncM3U2PuEyLyPDcNHLJEqY5fQCXr'
   ],
   [
-    'B62qrEpj44vuozt1TKMeKEf9GUJAwt2vRXVaWVNUhZYABXzacSbcDi3',
-    'EKENWDrcCufaDBLQxzV7fGn1MYcfzhtexMmZwWsdLPhUMBEeXStN'
+    'B62qiziFbwu65PWMYgx1rvDLqxSau9fMsvpq6FuhgEUBCoBQQYNmVGK',
+    'EKFHAMkPPU3WLqHRvzf4Ri1smXuk3ydKA8jSyyukKJbbPe1cCjba'
   ],
 ]
 
@@ -78,7 +76,7 @@ const stepsStatus = ref({
 
 // some other vars
 // redeployed contract address:
-const zkAppAddress = 'B62qnTUHoe9fTB5YMk3J1bcKXcWQEdseJzkhp9pWM994PTryBPAZZ23'
+const zkAppAddress = 'B62qqE7zwMCKqkYuCVobQeAhiYp7JaifVHfizuZorD4WtkPhr4LPvoi'
 const steps = ref({
   1: {
     'isFinished': false,
@@ -113,7 +111,6 @@ const sleep = (ms) => {
 onMounted(async () => {
   let msg = message.create('Loading', { type: 'success', duration: 10000 })
   await sleep(1500)
-  await isReady;
   loadingSnarkyJs.value = false
 
   // create Berkeley connection
@@ -179,8 +176,8 @@ const compileZkApp = async (zkAppAddress) => {
   console.log('before compiling')
   await sleep(1500)
   console.log('Compiling smart contract...', zkAppAddress);
-  await SimpleZkapp_.compile();
-  console.log(SimpleZkapp_)
+  await SimpleZkapp.compile();
+  console.log(SimpleZkapp)
   console.log('done')
 
   steps.value[2].isLoading = false
@@ -210,7 +207,7 @@ const getZkAppState = async (zkappAddress) => {
 
   // create the zkapp object
   try {
-    zkApp.value = new SimpleZkapp_(PublicKey.fromBase58(zkAppAddress));
+    zkApp.value = new SimpleZkapp(PublicKey.fromBase58(zkAppAddress));
     let value = zkApp.value.value.get();
     zkappState.value = value
     console.log(`Found deployed zkapp, with state ${value.toBase58()}`);
@@ -330,8 +327,6 @@ const broadcastTransaction = async () => {
   steps.value[6].isFinished = true
   stepsStatus.value.current = 6
   loadingBar.finish()
-
-  // await shutdown();
 }
 
 
@@ -349,7 +344,7 @@ const broadcastTransaction = async () => {
     </n-modal>
 
     <n-space vertical>
-      <n-h2>Before we begin, make sure you have an account with some mina in it</n-h2>
+      <n-h2>Before we begin, make sure you have an account with some Mina in it</n-h2>
       <n-button @click="generateNewKeys()">Generate new key pair (will have to fund via faucet)</n-button>
       <n-button @click="generatePrefundedKeys()">Randomly pick keys from one of prefunded accounts</n-button>
       <n-input-group>

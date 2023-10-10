@@ -7,6 +7,12 @@ import intro_ from './components/intro.vue'
 import content from './components/content.vue'
 import footer_ from './components/footer.vue'
 
+// modify theme vars
+darkTheme.common.primaryColor = '#2080f0'
+darkTheme.common.primaryColorHover = '#468ad9'
+darkTheme.common.primaryColorPressed = '#226cc1'
+darkTheme.common.primaryColorSuppl = '#0e76ed'
+darkTheme.common.borderRadius = '7px'
 
 </script>
 

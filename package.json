@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "snarkyjs": "^0.7.1",
+    "o1js": "^0.13.1",
     "vite-plugin-cross-origin-isolation": "^0.1.6",
     "vue": "^3.2.37",
     "zkapp-snarkyjs": "^0.1.6"
