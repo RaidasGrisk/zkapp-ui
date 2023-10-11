@@ -7,8 +7,8 @@ import { ref } from 'vue'
   <br><br>
   <div style="max-width: 600px;">
     <n-space vertical>
-      <n-tag :size="'large'" style="padding: 50px;" :bordered="false" round>
-        <n-text type="tertiary" :strong="true" depth="3" style="font-size: 30px">
+      <n-tag :size="'large'" style="padding: 30px;" :bordered="false" round>
+        <n-text type="tertiary" :strong="true" depth="3" style="font-size: 25px">
           10 / 2 + 2 = ?
         </n-text>
       </n-tag>
@@ -25,7 +25,7 @@ import { ref } from 'vue'
         </n-text>
       </n-h4>
       <n-alert title="Developer console" type="info" :bordered="true">
-        You can open the developer console and inspect the logs in greater detail.
+        Open dev console to inspect additional logs going through the example.
       </n-alert>
     </n-space>
   </div>

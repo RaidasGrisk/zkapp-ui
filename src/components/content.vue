@@ -10,14 +10,13 @@ import {
   PublicKey,
   Mina,
   fetchAccount,
-  setGraphqlEndpoint,
 } from 'o1js';
 
 // ui - components
 const loadingBar = useLoadingBar()
 const message = useMessage()
 const notification = useNotification()
-const loadingSnarkyJs = ref(true)
+const loadingO1js = ref(true)
 
 // zk-app
 const zkappState = ref('')
@@ -76,7 +75,7 @@ const stepsStatus = ref({
 
 // some other vars
 // redeployed contract address:
-const zkAppAddress = 'B62qqE7zwMCKqkYuCVobQeAhiYp7JaifVHfizuZorD4WtkPhr4LPvoi'
+const zkAppAddress = 'B62qrxp6zwJAYiQQqAi88izJ1KmVfGjra3HUwsZFoC9ptPZ6UVYdd7o'
 const steps = ref({
   1: {
     'isFinished': false,
@@ -111,13 +110,13 @@ const sleep = (ms) => {
 onMounted(async () => {
   let msg = message.create('Loading', { type: 'success', duration: 10000 })
   await sleep(1500)
-  loadingSnarkyJs.value = false
+  loadingO1js.value = false
 
   // create Berkeley connection
   const graphqlEndpoint = 'https://proxy.berkeley.minaexplorer.com/graphql';
-  setGraphqlEndpoint(graphqlEndpoint);
-  let Berkeley = Mina.BerkeleyQANet(graphqlEndpoint);
-  Mina.setActiveInstance(Berkeley);
+  const Network = Mina.Network(graphqlEndpoint);
+  const fee = Number(0.1) * 1e9; // in nanomina (1 billion = 1.0 mina)
+  Mina.setActiveInstance(Network);
   msg.content = 'Ready to interact with berkeley!'
 
 })
@@ -156,10 +155,48 @@ const checkAccountBalance = async () => {
 
 }
 
-const compileZkApp = async (zkAppAddress) => {
+const getZkAppState = async (zkappAddress) => {
 
   loadingBar.start()
   steps.value[2].isLoading = true
+
+  let { account, error } = await fetchAccount({ publicKey: PublicKey.fromBase58(zkAppAddress) });
+  console.log('account', JSON.stringify(account, null, 2));
+  console.log('error', JSON.stringify(error, null, 2));
+
+  if (error) {
+    steps.value[2].isLoading = false
+    steps.value[2].isFinished = true
+    stepsStatus.value.current = 1
+    loadingBar.error()
+    return
+  }
+
+  // create the zkapp object
+  try {
+    let zkApp = new SimpleZkapp(PublicKey.fromBase58(zkAppAddress));
+    let value = zkApp.value.get();
+    zkappState.value = value.toBase58();
+    console.log(`Found deployed zkapp, with state ${value.toBase58()}`);
+  } catch (error) {
+    console.log(error)
+    steps.value[2].isLoading = false
+    steps.value[2].isFinished = true
+    stepsStatus.value.current = 2
+    loadingBar.error()
+    return
+  }
+
+  steps.value[2].isLoading = false
+  steps.value[2].isFinished = true
+  stepsStatus.value.current = 3
+  loadingBar.finish()
+}
+
+const compileZkApp = async () => {
+
+  loadingBar.start()
+  steps.value[3].isLoading = true
   await sleep(500)
 
   message.warning(
@@ -175,70 +212,33 @@ const compileZkApp = async (zkAppAddress) => {
   // compile the zkapp
   console.log('before compiling')
   await sleep(1500)
-  console.log('Compiling smart contract...', zkAppAddress);
-  await SimpleZkapp.compile();
+  console.log('Compiling zk program...');
   console.log(SimpleZkapp)
-  console.log('done')
-
-  steps.value[2].isLoading = false
-  steps.value[2].isFinished = true
-  stepsStatus.value.current = 3
-  loadingBar.finish()
-
-}
-
-const getZkAppState = async (zkappAddress) => {
-
-  loadingBar.start()
-  steps.value[3].isLoading = true
-
-  console.log('PUBLICKEY: ', zkAppAddress, PublicKey.fromBase58(zkAppAddress))
-  let { account, error } = await fetchAccount({ publicKey: PublicKey.fromBase58(zkAppAddress)});
-  console.log('account', JSON.stringify(account, null, 2));
-  console.log('error', JSON.stringify(error, null, 2));
-
-  if (error) {
-    steps.value[3].isLoading = false
-    steps.value[3].isFinished = true
-    stepsStatus.value.current = 2
-    loadingBar.error()
-    return
-  }
-
-  // create the zkapp object
-  try {
-    zkApp.value = new SimpleZkapp(PublicKey.fromBase58(zkAppAddress));
-    let value = zkApp.value.value.get();
-    zkappState.value = value
-    console.log(`Found deployed zkapp, with state ${value.toBase58()}`);
-  } catch (error) {
-    steps.value[3].isLoading = false
-    steps.value[3].isFinished = true
-    stepsStatus.value.current = 3
-    loadingBar.error()
-    return
-  }
+  const { verificationKey } = await SimpleZkapp.compile();
+  console.log('Verification key: ', verificationKey)
 
   steps.value[3].isLoading = false
   steps.value[3].isFinished = true
   stepsStatus.value.current = 4
   loadingBar.finish()
+
 }
 
-const createTransaction = async () => {
+const createTransaction = async (zkAppAddress) => {
 
   loadingBar.start()
   steps.value[4].isLoading = true
 
   try {
+    // unfortunately, have to create the object once again, because ref does not work.
     let feePayerKey = PrivateKey.fromBase58(privateKey_.value);
+    let feepayerAddress = feePayerKey.toPublicKey();
+    let zkApp = new SimpleZkapp(PublicKey.fromBase58(zkAppAddress));
+    let fee = Number(0.1) * 1e9;
+
     transaction.value = await Mina.transaction(
-      { feePayerKey, fee: "300_000_000" },
-      (zkApp, equationAnswer, publicKey_) => {
-        zkApp.value.giveAnswer(
-          Field(equationAnswer.value),
-          PublicKey.fromBase58(publicKey_.value)
-        );
+      { sender: feepayerAddress, fee }, () => {
+        zkApp.giveAnswer(Field(equationAnswer.value), feepayerAddress);
       }
     );
     message.success('You have got the correct answer to the equation and ...', { duration: 10000 })
@@ -306,11 +306,12 @@ const broadcastTransaction = async () => {
   // send the transaction to the graphql endpoint
   console.log('Sending the transaction...');
   try {
-    let sendZkapp = await transaction.value.send();
+    let feePayerKey = PrivateKey.fromBase58(privateKey_.value);
+    let sendZkapp = await transaction.value.sign([feePayerKey]).send();
     console.log(sendZkapp)
     let txHash = await sendZkapp.hash()
     console.log(txHash)
-    message.success('Transaction send 🚀🚀🚀. The state of the smart contract will be updated after transaction is included into the next block!', { duration: 10000 })
+    message.success('Transaction send. The state of the smart contract will be updated after transaction is included into the next block!', { duration: 10000 })
     notification.create({
       title: 'Check when your transaction will be included into the next block',
       content: 'Transaction hash: ' + txHash + '\n\n' + 'https://berkeley.minaexplorer.com/'
@@ -334,10 +335,10 @@ const broadcastTransaction = async () => {
 
 <template>
   <div style="padding: 2px; max-width: 580px;">
-    <n-modal v-model:show="loadingSnarkyJs">
+    <n-modal v-model:show="loadingO1js">
       <n-card style="max-width: 150px;">
         <n-space vertical style="text-align: center;">
-          Loading snarkyJs
+          Loading o1js
           <n-spin size="large" />
         </n-space>
       </n-card>
@@ -364,23 +365,11 @@ const broadcastTransaction = async () => {
       <n-divider />
     <br><br>
   <n-space vertical>
-    <n-h2>Here is what we are going to do:</n-h2>
+    <n-h2>Follow these steps:</n-h2>
     <n-steps vertical :current="stepsStatus.current" :status="stepsStatus.currentStatus">
-      <!-- <n-step title="Establish blockchain connection">
-        <n-space vertical>
-          <n-button @click="connectToNetwork()" :loading="steps[1].isLoading" >connect</n-button>
-        </n-space>
-      </n-step> -->
       <n-step title="Check if selected account has enough funds">
         <n-space vertical>
           <n-button @click="checkAccountBalance()" :loading="steps[1].isLoading">Check</n-button>
-        </n-space>
-      </n-step>
-      <n-step title="Compile the smart contract we will interact with">
-        <n-space vertical>
-          <div>Check out the smart contract <a href="https://github.com/RaidasGrisk/zkapp-snarkyjs/blob/main/src/zkapp.ts">here</a>.</div>
-          <!-- <n-tag type="warning" size="small" round :bordered="false">local</n-tag> -->
-          <n-button @click="compileZkApp(zkAppAddress)" :loading="steps[2].isLoading">compile</n-button>
         </n-space>
       </n-step>
       <n-step title="Check the smart contract state on-chain">
@@ -389,9 +378,9 @@ const broadcastTransaction = async () => {
         The state is a single variable.
         It is an on-chain value showing the public address of the last account
         that solved the equation and sent over the generated proof.
-        <n-button @click="getZkAppState(zkappAddress)" :loading="steps[3].isLoading">Check</n-button>
-        <n-tag :size="'large'" style="padding: 30px;" :bordered="false">
-          <div v-if="steps[3].isLoading">
+        <n-button @click="getZkAppState(zkappAddress)" :loading="steps[2].isLoading">Check</n-button>
+        <n-tag :size="'large'" style="padding: 30px; borderRadius: 7px;" :bordered="false">
+          <div v-if="steps[2].isLoading">
             <n-spin size="small" />
           </div>
           <div else>
@@ -403,6 +392,13 @@ const broadcastTransaction = async () => {
         You will update this state if you solve the equation below.
       </n-space>
       </n-step>
+      <n-step title="Compile the smart contract we will interact with">
+        <n-space vertical>
+          <div>Check out the smart contract <a href="https://github.com/RaidasGrisk/zkapp-snarkyjs/blob/main/src/zkapp.ts">here</a>.</div>
+          <!-- <n-tag type="warning" size="small" round :bordered="false">local</n-tag> -->
+          <n-button @click="compileZkApp()" :loading="steps[3].isLoading">compile</n-button>
+        </n-space>
+      </n-step>
       <n-step title="Call the smart contract method">
         <n-space>
           <!-- <n-tag type="warning" size="small" round :bordered="false">local</n-tag> -->
@@ -410,7 +406,7 @@ const broadcastTransaction = async () => {
             Input your answer and run the smart contract method <b>locally in the browser</b>.
           </div>
           <n-input placeholder="10 / 2 + 2 = ?" v-model:value="equationAnswer"></n-input>
-          <n-button @click="createTransaction()" :loading="steps[4].isLoading" >Call</n-button>
+          <n-button @click="createTransaction(zkAppAddress)" :loading="steps[4].isLoading" >Call</n-button>
         </n-space>
       </n-step>
       <n-step title="Create the zero knowledge proof">
