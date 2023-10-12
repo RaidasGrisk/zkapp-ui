@@ -15,17 +15,17 @@ import { ref } from 'vue'
       <br>
       <n-h1>
         <n-text type="primary">
-          You've got the answer to the equation above, right?
+          Do you have the solution for the equation above?
         </n-text>
       </n-h1>
       <n-h4>
         <n-text depth="3">
-          Lets see how can you prove you know the answer using a <n-gradient-text type="info"><b>zero knowledge proof</b></n-gradient-text>.
-          And in the mean time try to understand a thing or two about what is happening.
+          Let's explore how can show you've got the answer with a <n-gradient-text type="info"><b>zero knowledge proof</b></n-gradient-text>.
+          While you're at it, try to grasp what's going on.
         </n-text>
       </n-h4>
       <n-alert title="Developer console" type="info" :bordered="true">
-        Open dev console to inspect additional logs going through the example.
+        You can open dev console to inspect additional logs going through the example.
       </n-alert>
     </n-space>
   </div>

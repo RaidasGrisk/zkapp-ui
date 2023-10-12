@@ -205,8 +205,8 @@ const compileZkApp = async () => {
 
   const n = notification.create({
     title: 'Why compile?',
-    content: `Usually smart contracts sit on chain and we can trigger a method by sending a transaction. Then the network will run the method of the smart contract.
-    \nBut thats not what we're going to do. Instead, we fetch the smart contract and compile it locally so that we can run it in our local environment (the browser). The network nodes will not run it for us.`,
+    content: `Typically, smart contracts reside on the blockchain, and you invoke their functions by sending transactions. The network's nodes then execute these functions for you.
+    \nHowever, in the case of Mina, we take a different approach. Instead of relying on the network to execute our smart contract, we fetch the contract, compile it and run locally. This means we can run it in our own local environment, like a web browser, without requiring the network nodes to handle the execution.`,
   })
 
   // compile the zkapp
@@ -242,7 +242,7 @@ const createTransaction = async (zkAppAddress) => {
       }
     );
     message.success('You have got the correct answer to the equation and ...', { duration: 10000 })
-    message.success('You have successfully generated a transaction. But we have not sent it yet! Before doing that, we have to generate a proof.', { duration: 10000 })
+    message.success('You have successfully generated a transaction. \nBut we have not sent it yet! Before doing that, we have to generate a proof.', { duration: 10000 })
 
   } catch (error) {
     message.error('Error', { duration: 10000 })
@@ -269,14 +269,15 @@ const createProof = async () => {
 
   notification.create({
     title: 'Why do we need a proof?',
-    content: `A generated proof is a long string containing a cryptographic proof, that you did run this zkApp method in your browser.\n\nYou will send a transaction that will modify an on-chain value only if you know the correct answer to the equation and have the proof you ran this exact zkApp method.`,
+    content: `A generated proof is a long string containing a cryptographic confirmation that you indeed executed this zkApp method in your browser.
+    \nYou will send a transaction that will modify an on-chain value only if you possess both the answer to the equation and the proof of the zkApp method execution.`,
   })
 
   await sleep(500)
 
   try {
     await transaction.value.prove();
-    console.log('The proof object? No longer see where is it stored :/', transaction.value.transaction)
+    console.log('Full proof: ', transaction.value.transaction.accountUpdates[0].authorization.proof)
   } catch (error) {
     console.log(error)
     steps.value[5].isLoading = false
@@ -287,8 +288,8 @@ const createProof = async () => {
   }
 
   notification.create({
-    title: 'Bingo, you successfully generated the proof!',
-    // content: 'Here is how it looks like: \n\n' + transaction.value.transaction.accountUpdates[0].authorization.proof.slice(0, 350) + ' ...'
+    title: 'Congratulations, you have successfully produced the proof!',
+    content: 'Here is how it looks like: \n\n' + transaction.value.transaction.accountUpdates[0].authorization.proof.slice(0, 150) + ' ...'
   })
 
   steps.value[5].isLoading = false
@@ -313,7 +314,7 @@ const broadcastTransaction = async () => {
     console.log(txHash)
     message.success('Transaction send. The state of the smart contract will be updated after transaction is included into the next block!', { duration: 10000 })
     notification.create({
-      title: 'Check when your transaction will be included into the next block',
+      title: 'Follow your transaction in blockexplorer',
       content: 'Transaction hash: ' + txHash + '\n\n' + 'https://berkeley.minaexplorer.com/'
     })
   } catch (error) {
@@ -345,7 +346,7 @@ const broadcastTransaction = async () => {
     </n-modal>
 
     <n-space vertical>
-      <n-h2>Before we begin, make sure you have an account with some Mina in it</n-h2>
+      <n-h2>Before we start, make sure you have an account with some Mina in it</n-h2>
       <n-button @click="generateNewKeys()">Generate new key pair (will have to fund via faucet)</n-button>
       <n-button @click="generatePrefundedKeys()">Randomly pick keys from one of prefunded accounts</n-button>
       <n-input-group>
@@ -356,16 +357,16 @@ const broadcastTransaction = async () => {
         <n-input-group-label>private key</n-input-group-label>
         <n-input v-model:value="privateKey_"/>
       </n-input-group>
-      <n-text>
+      <!-- <n-text>
         Before moving forward make sure the account already has some mina in it.
         <a href="https://berkeley.minaexplorer.com/faucet">Faucet link</a>.
-      </n-text>
+      </n-text> -->
     </n-space>
     <br><br>
       <n-divider />
     <br><br>
   <n-space vertical>
-    <n-h2>Follow these steps:</n-h2>
+    <n-h2>Follow the steps to prove you know the answer and store it on-chain:</n-h2>
     <n-steps vertical :current="stepsStatus.current" :status="stepsStatus.currentStatus">
       <n-step title="Check if selected account has enough funds">
         <n-space vertical>
@@ -375,10 +376,9 @@ const broadcastTransaction = async () => {
       <n-step title="Check the smart contract state on-chain">
         <n-space vertical>
         <!-- <n-tag type="warning" size="small" round :bordered="false">remote</n-tag> -->
-        The state is a single variable.
-        It is an on-chain value showing the public address of the last account
-        that solved the equation and sent over the generated proof.
-        <n-button @click="getZkAppState(zkappAddress)" :loading="steps[2].isLoading">Check</n-button>
+        The state consists of a single variable holding the public address of the
+        most recent account that successfully solved the equation and submitted the generated proof.
+                <n-button @click="getZkAppState(zkappAddress)" :loading="steps[2].isLoading">Check</n-button>
         <n-tag :size="'large'" style="padding: 30px; borderRadius: 7px;" :bordered="false">
           <div v-if="steps[2].isLoading">
             <n-spin size="small" />
