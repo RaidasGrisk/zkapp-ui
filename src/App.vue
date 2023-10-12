@@ -14,6 +14,7 @@ darkTheme.common.primaryColorPressed = '#226cc1'
 darkTheme.common.primaryColorSuppl = '#0e76ed'
 darkTheme.common.successColor = '#14CC60'
 darkTheme.common.warningColor = '#14CC60'
+darkTheme.common.infoColor = '#14CC60'
 darkTheme.common.borderRadius = '7px'
 
 </script>
